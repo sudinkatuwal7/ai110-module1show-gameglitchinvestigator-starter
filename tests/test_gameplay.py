@@ -80,6 +80,32 @@ def test_win_on_last_attempt_and_restart():
     assert app.session_state.score == 100
 
 
+def test_readme_walkthrough_with_invalid_input_and_third_guess_win():
+    app = new_game(50)
+    submit(app, 40)
+    assert "Too low. Go HIGHER!" in app.warning[0].value
+    assert "Attempts left: 7" in app.info[0].value
+    assert app.session_state.score == 0
+
+    submit(app, 70)
+    assert "Too high. Go LOWER!" in app.warning[0].value
+    assert "Attempts left: 6" in app.info[0].value
+    assert app.session_state.score == 0
+
+    submit(app, "50.9")
+    assert "Enter a whole number." in app.error[0].value
+    assert "Attempts left: 6" in app.info[0].value
+    assert app.session_state.history == [40, 70]
+    assert app.session_state.score == 0
+
+    submit(app, 50)
+    assert "You won! The secret was 50. Final score: 80" in app.success[0].value
+    assert "Attempts left: 5" in app.info[0].value
+    assert app.session_state.history == [40, 70, 50]
+    assert app.session_state.status == "won"
+    assert app.button[0].disabled
+
+
 @pytest.mark.parametrize("difficulty,high,limit", [("Easy", 20, 6), ("Hard", 50, 5)])
 def test_difficulty_changes_and_new_games_use_selected_range(difficulty, high, limit):
     app = new_game(99)
