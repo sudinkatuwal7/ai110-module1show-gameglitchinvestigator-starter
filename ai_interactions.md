@@ -6,7 +6,7 @@ This log records the agent workflow and AI-generated tests actually used in this
 
 **What task did you give the agent?**
 
-I supplied the assignment instructions to run the Streamlit game, reproduce bugs, document them, refactor and repair the logic, generate tests, and finalize the documentation. I also reported remaining problems with attempts and invalid guesses and provided the concrete output: `Out of attempts! The secret was 44. Score: -25`.
+I supplied the assignment instructions and asked for help running, investigating, and repairing the game. As I worked through it, I pointed out problems with attempts and invalid guesses, then shared the concrete output: `Out of attempts! The secret was 44. Score: -25`. I also asked how cloning, changing directories, committing, and pushing worked because I wanted to understand the commands being used.
 
 **What did the agent do?**
 
@@ -14,7 +14,7 @@ Codex inspected `app.py` and `logic_utils.py`, installed the required libraries,
 
 **What did you have to verify or fix manually?**
 
-I reported that the game still had attempt, hint, and scoring problems after the initial documentation stage; those reports prompted the actual gameplay repairs. The automated checks are the assistant's verification, not evidence that I personally reviewed every diff or manually retested the fixed game. The personal reflection should be reviewed before submission to make sure it represents my own understanding. This work used one ongoing chat.
+I noticed that the game still had attempt, hint, and scoring problems after the initial documentation stage, and I brought those problems back to the assistant instead of assuming the work was finished. My report of the -25 score gave us a specific result to investigate. Codex made the code changes and ran the automated checks; my contribution was trying the game, questioning the results, and directing attention to the remaining problems. We worked through those questions in one ongoing chat.
 
 ## Test Generation (SF7)
 

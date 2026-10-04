@@ -23,9 +23,11 @@ The secret stays the same during a round. New Game and difficulty changes start 
 
 ## Document Your Experience
 
-The purpose of the game is to practice debugging AI-generated code by connecting visible symptoms to their causes and verifying repairs.
+I used this game to practice spotting bugs and connecting what I saw on screen to the code behind it. I was also learning the workflow: I asked how the repository was cloned, what changing folders does, and which commands were used to commit and push the work.
 
 The original game reversed its hints, compared numbers as strings on alternating attempts, started with one attempt already used, and rendered stale counters. Invalid text consumed attempts, decimals were silently truncated, and numbers outside the selected range were accepted. New Game failed to clear a completed game's status, and difficulty changes could leave the secret outside the displayed range. During play, I reported the message `Out of attempts! The secret was 44. Score: -25`; this provided a concrete example of the negative-score problem.
+
+I kept bringing up the attempt counter, invalid guesses, and hints because the game still did not seem right to me. Asking whether everything was done also helped clarify that documenting a bug and fixing it are different steps. My role was to question the results and report the symptoms, while Codex helped trace the causes, edit the code, and run automated tests.
 
 With Codex, the reusable functions were moved into `logic_utils.py`, leaving the Streamlit interface and session state in `app.py`. Guesses and secrets now stay numeric, hints match the comparison, validation happens before counting an attempt, and callbacks update state before the page renders. Complete resets keep the target within the selected difficulty. Scores are bounded at zero, and regression tests cover both the pure logic and real Streamlit widget interactions.
 

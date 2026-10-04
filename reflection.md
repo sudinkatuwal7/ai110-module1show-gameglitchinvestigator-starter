@@ -4,11 +4,11 @@ Answer each question in 3 to 5 sentences. Be specific and honest about what actu
 
 ## 1. What was broken when you started?
 
-The AI assistant installed the dependencies, launched the app through Streamlit, and used Streamlit AppTest to interact with the actual app; these are automated observations, not a claim that I manually played in a browser.
-On the initial Normal screen, the app showed the title, difficulty selector, guess input, buttons, and Developer Debug Info, but only 7 attempts left despite allowing 8.
-For repeatable observations, the assistant temporarily mocked `random.randint` to return 50 in the test process without changing the game files: game 1 used `60`, `40`, and `50`, then New Game, while game 2 used `9`, `9`, and `50.9` in a fresh session.
-These runs and follow-up automated checks exposed reversed hints, inconsistent comparisons, invalid-input and range problems, incorrect attempt counts, and a restart that remained stuck in the won state.
-The AI explained that `check_guess()` pairs the `guess > secret` branch with `Go HIGHER!`, so a guess of 60 against 50 incorrectly tells the player to increase the guess; the opposite branch is reversed too.
+When I tried the game, the higher/lower hints and the number of attempts left did not seem right.
+I pointed out that there were more problems with attempts and invalid guesses, even after the first bugs had been documented.
+One result I shared was `Out of attempts! The secret was 44. Score: -25`, because the negative score and confusing hints made me question how the game was working.
+Codex helped investigate my observations and used automated playthroughs to find the exact causes, including reversed messages, string comparisons, and counting attempts before validating input.
+The reproduction table below records those automated checks, including problems with decimals, difficulty ranges, and starting a new game.
 
 **Bug Reproduction Logs**
 
@@ -24,27 +24,27 @@ The AI explained that `check_guess()` pairs the `guess > secret` branch with `Go
 | Fresh Normal session, secret 50: submit `0`, then `101`. | Both numbers should be rejected as outside the advertised 1-100 range. | Both are accepted into history, consume attempts, and receive directional hints instead of range errors. | No app exception; UI: `Go LOWER!` for 0 and `Go HIGHER!` for 101. | `app.py`, `parse_guess()`, lines 14-29 checks conversion only; the submit handler at lines 150-163 never checks `low <= guess_int <= high`. |
 | Fresh Normal session with secret 50: switch Difficulty to Easy, inspect Developer Debug Info, then click New Game while still playing. | The target and main instructions should match Easy's advertised range of 1-20, including after New Game. | Switching preserves secret 50 while the sidebar says 1-20 and the main instructions still say 1-100. New Game also requests a number from 1-100; in the controlled run it produces 50 again. | No app exception; sidebar: `Range: 1 to 20`; debug secret: 50; recorded random call on New Game: `randint(1, 100)`. | `app.py`, lines 92-93 create a secret only if absent, so difficulty changes keep the old target; line 110 hardcodes 1-100; line 136 also hardcodes 1-100 for New Game. |
 
-The completed automated runs produced no app exceptions. AppTest emitted the harness warning `Thread 'MainThread': missing ScriptRunContext!`, which is separate from the gameplay issues above; an initial harness run also hit its default 3-second timeout, and the completed runs used a 30-second timeout. The original browser app used a random secret, so reproducing these observations required checking Developer Debug Info and adjusting guesses accordingly. At the time of these observations, the game used functions in `app.py`, while `logic_utils.py` contained unimplemented placeholders; the later fixes described in section 3 moved the working logic into that module. This table records the original bugs, not the behavior after the fixes.
+For these automated checks, Codex temporarily fixed the secret at 50 in the test process; the live game still chose randomly. Game 1 used 60, 40, and 50, then New Game; game 2 used 9, 9, and 50.9. AppTest produced no app exceptions in the completed runs, although the test harness emitted a `missing ScriptRunContext` warning and initially needed a longer timeout. The code locations in the table refer to the original version, before the functions moved into `logic_utils.py`.
 
 ---
 
 ## 2. How did you use AI as a teammate?
 
-I used Codex as an AI coding teammate with access to `app.py`, `logic_utils.py`, and the tests, and I supplied feedback about attempts, invalid guesses, incorrect hints, and the displayed score of -25.
-One correct suggestion was to keep guesses and secrets as integers and move comparisons into `logic_utils.py`, because numeric order correctly treats 9 as less than 44; the comparison tests and repeated-hint interaction tests verified that repair.
-One AI-generated approach we changed instead of accepting as written was the starter parser's `int(float(raw))`, which silently turned a decimal such as 50.9 into 50 and could award a win for an invalid guess.
-The replacement uses integer-only parsing and validates the range before consuming an attempt, and the walkthrough test verifies that 50.9 produces an error while preserving the score, attempt count, and history before a valid 50 wins.
-This critique concerns the AI-generated starter code, not a fabricated later suggestion; our work used one ongoing chat, and the assistant reviewed the diffs rather than claiming that I opened separate chats or personally reviewed every change.
+I used Codex to help investigate the code, but I also kept asking questions and reporting what still seemed wrong in the game.
+One correct suggestion was to keep guesses and secrets as integers and move the comparisons into `logic_utils.py`, since comparing strings can incorrectly treat 9 as greater than 44.
+Codex verified that change with tests for numeric comparisons and repeated higher/lower hints.
+An AI-generated approach we changed instead of keeping was the starter's `int(float(raw))`: turning 50.9 into 50 hides invalid input, so we replaced it with whole-number validation, and a test confirmed that 50.9 no longer wins or uses an attempt.
+I also questioned whether documenting the bugs meant the work was finished and came back with the -25 result, which helped move the conversation from describing problems to repairing the game.
 
 ---
 
 ## 3. Debugging and testing your fixes
 
-The two priority repairs were inconsistent higher/lower hints and negative scores; the plan was to compare integers in `check_guess()`, map outcomes to directions in `app.py`, and make `update_score()` apply consistent penalties with a zero floor.
-After I reported the symptoms, the AI assistant implemented those repairs along with input validation, attempt counting, and game resets, moved reusable functions into `logic_utils.py`, and added `FIXME (resolved)` and `FIX` comments identifying the original causes and collaboration.
-The scoring rule now awards 100 points for a first-guess win, reduces that award by 10 per additional valid guess to a minimum of 10, and prevents wrong-guess penalties from lowering the score below zero.
-The assistant added focused tests in `test/test_game_logic.py` and interaction tests in `tests/test_gameplay.py`, then ran `python -m pytest -q`: `25 passed in 12.24s`, including the three original tests; cases cover 60 against 50 returning `Too High`, repeated hints with secret 44, invalid inputs, immediate counters, a loss after eight Normal guesses at score 0, a last-attempt win, restarts, difficulty ranges, and the README walkthrough's third-guess win for 80 points.
-The app was launched with `python -m streamlit run app.py` using headless local-server options, and its health endpoint returned `ok`; these are automated verification results, and a personal browser retest of the fixed version has not been recorded.
+The first two repair targets were the confusing hints and the negative score I reported, with attempt counting and input validation checked alongside them.
+My observations gave us concrete symptoms to investigate, and Codex connected them to the code, implemented the repairs, and added tests.
+For example, one test checks that 60 against a secret of 50 returns `Too High`, while another plays through eight wrong guesses and checks that the game ends with zero attempts left and a score of 0.
+The README walkthrough was also tested: 40 and 70 get the correct hints, 50.9 is rejected without using an attempt, and 50 wins for 80 points on the third valid guess.
+Codex ran `python -m pytest -q` and got `25 passed in 12.24s`, including the starter tests, and checked that the Streamlit server responded successfully; this is the automated evidence for the repairs.
 
 ---
 
@@ -59,7 +59,8 @@ The repaired app uses a submit callback to validate and update state before the 
 
 ## 5. Looking ahead: your developer habits
 
-The habit I want to carry forward is recording the exact input, expected result, actual result, and relevant code before asking AI to change anything.
-Next time, I would keep each AI request focused on one bug, review that diff myself, and commit the bug log before the repair instead of combining the initial documentation and fixes in one commit.
-Reporting the remaining hint problems and the -25 score showed why an assistant's progress summary should be checked against the actual game.
-AI-generated code is a starting point to inspect and test, and passing simple comparison tests alone is not enough to prove that input handling, session state, and the full game work together.
+I want to keep asking how things work instead of only asking whether they are done.
+For this assignment, I asked which commands cloned the repository and which commands committed and pushed the changes, and I also checked whether changing folders in the assistant changed my own terminal.
+Next time, I would record exact bug examples earlier, review each small diff myself, and commit the bug log separately before making repairs.
+Seeing more problems after the initial bug report taught me that a progress message is not enough evidence that the game works.
+AI helped with the code and testing, while my questions and feedback helped decide what still needed attention.
