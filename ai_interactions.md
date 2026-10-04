@@ -1,76 +1,37 @@
 # AI Interactions Log
 
-> **Stretch features only.** Only fill in the sections that apply to stretch features you attempted. If you did not attempt a stretch feature, leave its section blank or delete it. This file is not required for the core project.
-
----
+This log records the agent workflow and AI-generated tests actually used in this project. It does not claim linting or a comparison between models.
 
 ## Agent Workflow (SF8)
 
-> Document your experience using an AI agent (e.g., Cursor Agent, Claude, Copilot) to make multi-step changes autonomously.
-
 **What task did you give the agent?**
 
-<!-- Describe the goal you asked the agent to accomplish -->
+I supplied the assignment instructions to run the Streamlit game, reproduce bugs, document them, refactor and repair the logic, generate tests, and finalize the documentation. I also reported remaining problems with attempts and invalid guesses and provided the concrete output: `Out of attempts! The secret was 44. Score: -25`.
 
 **What did the agent do?**
 
-<!-- List the steps the agent took (files edited, commands run, etc.) -->
+Codex inspected `app.py` and `logic_utils.py`, installed the required libraries, started Streamlit, and reproduced bugs using Streamlit AppTest. It documented nine reproduction cases in `reflection.md`, moved reusable logic into `logic_utils.py`, and repaired comparisons, hint directions, validation, attempt counting, score handling, and resets. It added focused tests in `test/test_game_logic.py` and interaction tests in `tests/test_gameplay.py`, while retaining the original `tests/test_game_logic.py`. It completed the README walkthrough and reflection, reviewed diffs, and used Git in PowerShell to commit and push the authorized changes.
 
 **What did you have to verify or fix manually?**
 
-<!-- Describe anything the agent got wrong or that required human review -->
-
----
+I reported that the game still had attempt, hint, and scoring problems after the initial documentation stage; those reports prompted the actual gameplay repairs. The automated checks are the assistant's verification, not evidence that I personally reviewed every diff or manually retested the fixed game. The personal reflection should be reviewed before submission to make sure it represents my own understanding. This work used one ongoing chat.
 
 ## Test Generation (SF7)
 
-> Document how you used AI to help generate or improve tests.
+The prompts below quote requests or reports supplied in this conversation. The assistant designed the specific cases from that context; they were not all separately typed prompts.
 
 | Edge Case | Prompt Used | AI-Suggested Test | Did It Pass? | Your Reasoning |
 |-----------|-------------|-------------------|--------------|----------------|
-| | | | | |
-| | | | | |
-| | | | | |
+| Numbers with different digit lengths and repeated hints | “Ask your AI coding assistant to generate a pytest case in test/test_game_logic.py that specifically targets the bug you just fixed.” | Check 9 against 44 as Too Low and 100 against 44 as Too High; repeat guesses in the app to verify consistent hints. | Yes. | A string comparison can give the wrong order even if ordinary two-digit examples pass. |
+| Invalid decimal followed by a valid winning guess | “Ask your AI coding assistant to generate a pytest case in test/test_game_logic.py that specifically targets the bug you just fixed.” | Reject 50.9 without changing attempts, score, or history, then accept 50 and win on the third valid guess for 80 points. | Yes. | A parser must not silently change a rejected guess into the secret, and the next valid submission must still work. |
+| Negative score and exhausted attempts | “Out of attempts! The secret was 44. Score: -25” | Submit eight wrong guesses with secret 44; assert zero attempts left, score 0, a loss message, and successful restart. | Yes. | This reproduces the reported failure through actual widget interactions and checks the complete round. |
+| Winning on the final allowed guess | “Confirm that your new test passes along with the existing starter tests.” | Make seven wrong Normal guesses, then guess the secret; assert a win and score 30. | Yes. | Reaching the attempt limit must not override a correct final guess. |
 
----
+Final full-suite command: `python -m pytest -q`.
 
-## Linting & Style (SF9)
-
-> Document your use of AI for linting or code style improvements.
-
-**Prompt used:**
-
-```
-<!-- Paste the prompt you gave the AI -->
+```text
+.........................                                                [100%]
+25 passed in 12.24s
 ```
 
-**Linting output before:**
-
-```
-<!-- Paste relevant linter warnings/errors -->
-```
-
-**Changes applied:**
-
-<!-- Describe what you changed based on the AI's suggestions -->
-
----
-
-## Model Comparison (SF11)
-
-> Compare two AI models on the same task.
-
-**Task given to both models:**
-
-<!-- Describe what you asked each model to do -->
-
-| | Model A | Model B |
-|-|---------|---------|
-| **Model name** | | |
-| **Response summary** | | |
-| **More Pythonic?** | | |
-| **Clearer explanation?** | | |
-
-**Which did you prefer and why?**
-
-<!-- Your conclusion -->
+The suite also covers blanks, whitespace, letters, negative and out-of-range numbers, score floors, and difficulty changes. A controlled secret is supplied only by test mocks; the live app still chooses randomly.
