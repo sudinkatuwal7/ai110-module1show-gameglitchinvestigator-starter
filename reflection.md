@@ -30,11 +30,11 @@ The completed automated runs produced no app exceptions. AppTest emitted the har
 
 ## 2. How did you use AI as a teammate?
 
-I used Codex as an AI coding teammate with access to `app.py`, `logic_utils.py`, and the tests in this repository.
-One correct suggestion was to keep the guess and secret as integers, move comparison logic into `logic_utils.py`, and let `app.py` translate the outcome into the correct higher/lower hint.
-That fixes the underlying problem because numeric order correctly treats 9 as less than 44, while comparing the strings `'9'` and `'44'` does not; the automated checks verify both numeric outcomes and repeated hints in the Streamlit UI.
-**Still to complete personally:** record one AI suggestion I rejected or changed, why, and how I verified my alternative; no specific rejected suggestion has been supplied yet, so this reflection does not invent one.
-The work happened in one ongoing chat, and the assistant reviewed the code diffs; separate per-bug chats and a personal review of every diff have not been recorded.
+I used Codex as an AI coding teammate with access to `app.py`, `logic_utils.py`, and the tests, and I supplied feedback about attempts, invalid guesses, incorrect hints, and the displayed score of -25.
+One correct suggestion was to keep guesses and secrets as integers and move comparisons into `logic_utils.py`, because numeric order correctly treats 9 as less than 44; the comparison tests and repeated-hint interaction tests verified that repair.
+One AI-generated approach we changed instead of accepting as written was the starter parser's `int(float(raw))`, which silently turned a decimal such as 50.9 into 50 and could award a win for an invalid guess.
+The replacement uses integer-only parsing and validates the range before consuming an attempt, and the walkthrough test verifies that 50.9 produces an error while preserving the score, attempt count, and history before a valid 50 wins.
+This critique concerns the AI-generated starter code, not a fabricated later suggestion; our work used one ongoing chat, and the assistant reviewed the diffs rather than claiming that I opened separate chats or personally reviewed every change.
 
 ---
 
@@ -43,20 +43,23 @@ The work happened in one ongoing chat, and the assistant reviewed the code diffs
 The two priority repairs were inconsistent higher/lower hints and negative scores; the plan was to compare integers in `check_guess()`, map outcomes to directions in `app.py`, and make `update_score()` apply consistent penalties with a zero floor.
 After I reported the symptoms, the AI assistant implemented those repairs along with input validation, attempt counting, and game resets, moved reusable functions into `logic_utils.py`, and added `FIXME (resolved)` and `FIX` comments identifying the original causes and collaboration.
 The scoring rule now awards 100 points for a first-guess win, reduces that award by 10 per additional valid guess to a minimum of 10, and prevents wrong-guess penalties from lowering the score below zero.
-The assistant added focused tests in `test/test_game_logic.py` and interaction tests in `tests/test_gameplay.py`, then ran `python -m pytest -q`: `24 passed in 12.43s`, including the three original tests; cases cover 60 against 50 returning `Too High`, repeated hints with secret 44, invalid inputs, immediate counters, a loss after eight Normal guesses at score 0, a last-attempt win, restarts, and difficulty ranges.
+The assistant added focused tests in `test/test_game_logic.py` and interaction tests in `tests/test_gameplay.py`, then ran `python -m pytest -q`: `25 passed in 12.24s`, including the three original tests; cases cover 60 against 50 returning `Too High`, repeated hints with secret 44, invalid inputs, immediate counters, a loss after eight Normal guesses at score 0, a last-attempt win, restarts, difficulty ranges, and the README walkthrough's third-guess win for 80 points.
 The app was launched with `python -m streamlit run app.py` using headless local-server options, and its health endpoint returned `ok`; these are automated verification results, and a personal browser retest of the fixed version has not been recorded.
 
 ---
 
 ## 4. What did you learn about Streamlit and state?
 
-- How would you explain Streamlit "reruns" and session state to a friend who has never used Streamlit?
+Streamlit rebuilds the page by running the script again when a user interacts with a widget.
+Ordinary variables are recreated during that run, while `st.session_state` keeps values such as the secret, attempts, score, and history for the current session.
+The original counter was drawn before the submission handler changed it, so it showed the previous value until another interaction caused a rerun.
+The repaired app uses a submit callback to validate and update state before the page renders, and New Game explicitly resets all the values for a fresh round.
 
 ---
 
 ## 5. Looking ahead: your developer habits
 
-- What is one habit or strategy from this project that you want to reuse in future labs or projects?
-  - This could be a testing habit, a prompting strategy, or a way you used Git.
-- What is one thing you would do differently next time you work with AI on a coding task?
-- In one or two sentences, describe how this project changed the way you think about AI generated code.
+The habit I want to carry forward is recording the exact input, expected result, actual result, and relevant code before asking AI to change anything.
+Next time, I would keep each AI request focused on one bug, review that diff myself, and commit the bug log before the repair instead of combining the initial documentation and fixes in one commit.
+Reporting the remaining hint problems and the -25 score showed why an assistant's progress summary should be checked against the actual game.
+AI-generated code is a starting point to inspect and test, and passing simple comparison tests alone is not enough to prove that input handling, session state, and the full game work together.
